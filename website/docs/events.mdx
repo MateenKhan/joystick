@@ -1,0 +1,92 @@
+---
+id: events
+title: Events
+sidebar_position: 2
+---
+
+Five emitters. Nothing in them knows about shapes, canvases, CAD or furniture — the component emits **direction and speed**, you decide what that means.
+
+| Handler | Fires |
+| --- | --- |
+| `onStart(meta)` | A gesture begins. |
+| `onChange(delta, meta)` | Every frame while dragging. |
+| `onEnd(summary, meta)` | The gesture ends — one undo entry's worth. |
+| `onHover(hovering)` | Pointer enters or leaves the stick. |
+| `onAxisTap(axis, direction)` | An axis label was tapped, not dragged. |
+
+## `JoystickDelta` — the per-frame slice
+
+```ts
+type JoystickDelta = {
+  x: number;          // continuous, per-frame
+  y: number;          // screen-up is +y, screen-right is +x
+  z: number;
+  operation: JoystickOperation;
+  magnitude: number;  // 0–1 deflection, before the acceleration curve
+  angle?: number;     // radians CCW from screen-right; rotate only, snapped
+};
+```
+
+**`1.0` on an axis means one ring-radius of deflection, per frame.** Multiply by whatever your app calls a unit — millimetres, pixels, degrees. The component never assumes.
+
+`magnitude` is the raw deflection *before* acceleration, so it's the honest "how far is the thumb" number. The accelerated value is already baked into `x`/`y`/`z`.
+
+## `JoystickEventMeta` — input context
+
+```ts
+type JoystickEventMeta = {
+  pointerType: 'mouse' | 'touch' | 'pen';
+  shiftKey: boolean;
+  ctrlKey: boolean;
+  altKey: boolean;
+  timeStamp: number;
+  source?: 'pointer' | 'keyboard';
+};
+```
+
+Keyboard gestures report `pointerType: 'mouse'` because `PointerEvent` has no keyboard value — check `source === 'keyboard'` if you need to tell them apart.
+
+## `JoystickGestureSummary` — one undo entry
+
+```ts
+type JoystickGestureSummary = {
+  total: { x: number; y: number; z: number };
+  operation: JoystickOperation;
+  durationMs: number;
+  dominantAxis: Axis | null;   // null when the gesture moved nothing
+  cancelled: boolean;          // true if Escape cancelled it; total is zeroed
+};
+```
+
+This is the one to hang undo off. `onChange` fires per frame and would flood a history stack; `onEnd` fires once with the accumulated total.
+
+```tsx
+<Joystick
+  onChange={(d) => applyLive(d)}          // per frame, cheap
+  onEnd={(s) => {
+    if (!s.cancelled) undoStack.push(s);  // once per gesture
+  }}
+/>
+```
+
+**`cancelled` matters.** Pressing `Escape` mid-drag zeroes `total` and sets the flag, so you can revert instead of committing. Check it before writing to history.
+
+## `onAxisTap`
+
+A motionless press under `tapMaxMs` on an axis label is a tap, not a drag — it emits one step in that direction instead of starting a gesture.
+
+```tsx
+<Joystick onAxisTap={(axis, dir) => nudge(axis, dir * 1)} />
+```
+
+## Spreading them
+
+Every emitter is available as one type, which is convenient when passing handlers down:
+
+```ts
+import type { JoystickEvents } from '@jugaaadi/joystick';
+
+function Panel(props: JoystickEvents) {
+  return <Joystick {...props} />;
+}
+```

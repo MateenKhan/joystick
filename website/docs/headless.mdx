@@ -1,0 +1,85 @@
+---
+id: headless
+title: Headless
+sidebar_position: 4
+---
+
+import Demo from '@site/src/components/Demo';
+import { HeadlessDemo } from '@site/src/components/Demo/examples';
+
+`useJoystick` is all of the gesture behaviour with none of the pixels. Use it when the built-in chrome doesn't fit your design.
+
+<Demo
+  code={`import { useJoystick } from '@jugaaadi/joystick';
+
+function MyStick() {
+  const { bind, state } = useJoystick({
+    radius: 46,
+    onChange: (d) => nudge(d),
+  });
+
+  return (
+    <div ref={bind} tabIndex={0} style={{ touchAction: 'none' }}>
+      <div style={{ transform: \`translate(\${state.x}px, \${state.y}px)\` }} />
+    </div>
+  );
+}`}
+  hint={<>The circle and the thumb are plain divs styled by this site — every behaviour comes from the hook.</>}
+>
+  <HeadlessDemo />
+</Demo>
+
+## What you get back
+
+```ts
+const { bind, state } = useJoystick(options);
+```
+
+**`bind`** is a stable ref callback. Hand it straight to `ref` — it doesn't change identity between renders, so it won't churn your effects.
+
+**`state`** is `{ dragging, x, y, magnitude }`:
+
+| | |
+| --- | --- |
+| `dragging` | whether a gesture is in progress |
+| `x` / `y` | thumb offset in px, **already clamped to the ring** |
+| `magnitude` | 0–1 deflection, before the acceleration curve |
+
+`x`/`y` are clamped for you, so a thumb rendered at that offset can never escape its circle no matter how far the pointer travels.
+
+## Options
+
+Everything the component takes, plus two of its own:
+
+| Option | Default | |
+| --- | --- | --- |
+| `radius` | from `size` | Ring radius in px. Overrides `size`. |
+| `tapMaxMs` | `250` | Longest motionless press still a tap. |
+| `size` | `140` | Only used to derive the radius. |
+| `operation` | `'move'` | |
+| `axes` | `['x','y']` | |
+| `zMode` | `false` | Vertical drag drives `z`, horizontal ignored. |
+| `deadzone` | `0.06` | |
+| `accelExponent` | `2.2` | |
+| `maxSpeedMultiplier` | `6` | |
+| `rotateSnapDeg` | `15` | |
+| `disabled` | `false` | |
+| `keyStep` / `keyStepMultiplier` | `1` / `10` | |
+
+Plus every event from [Events](./events.mdx) — `onStart`, `onChange`, `onEnd`, `onHover`, `onAxisTap`.
+
+## What the hook still handles for you
+
+This is the part worth not rewriting:
+
+- **Pointer capture** — the drag survives the pointer leaving the element, including off-window
+- **`pointercancel`** — a system gesture releases the stick cleanly instead of leaving it stuck mid-drag
+- **Tap vs drag** — resolved by both time (`tapMaxMs`) and distance (4px of slop)
+- **Keyboard** — arrow keys step, `Shift` multiplies, `Escape` cancels the gesture and zeroes the total
+- **The ring clamp** and the acceleration curve
+
+## Two things you must supply
+
+**`touch-action: none`** on the element, or dragging will scroll the page on touch devices instead of moving the stick.
+
+**`tabIndex={0}`** if you want keyboard support — the hook attaches the handlers, but a plain `div` isn't focusable without it. Add an `aria-label` too.

@@ -1,0 +1,103 @@
+---
+id: intro
+title: Getting started
+sidebar_position: 1
+slug: /intro
+---
+
+import Demo from '@site/src/components/Demo';
+import { BasicDemo, OperationsDemo, MinimalDemo } from '@site/src/components/Demo/examples';
+
+A dark, touch-first **analogue joystick** for React.
+
+Drag it and it emits a direction and a speed, every frame, until you let go. Drag **past the ring** and it keeps accelerating while the thumb stays inside — so the same control does a 2 mm nudge and a 300 mm shove without a modifier key or a mode switch.
+
+<Demo
+  code={`import { Joystick } from '@jugaaadi/joystick';
+import '@jugaaadi/joystick/styles.css';
+
+const [pos, setPos] = useState({ x: 0, y: 0, z: 0 });
+
+<Joystick
+  onChange={(d) => setPos((p) => ({
+    x: p.x + (d.x ?? 0),
+    y: p.y + (d.y ?? 0),
+    z: p.z + (d.z ?? 0),
+  }))}
+/>`}
+  hint={<>Drag slowly near the centre for fine control, then push past the ring and hold — it keeps accelerating.</>}
+>
+  <BasicDemo />
+</Demo>
+
+## Install
+
+```bash
+npm install @jugaaadi/joystick
+```
+
+`react` and `react-dom` (>= 17) are peer dependencies. Zero runtime dependencies otherwise.
+
+```tsx
+import { Joystick } from '@jugaaadi/joystick';
+import '@jugaaadi/joystick/styles.css';
+```
+
+## Nothing renders until you ask for it
+
+The default is one operation, no switcher, no clutter. A furniture app has no use for extrude or fillet, and a dead mode is worse than a hidden one.
+
+<Demo
+  code={`<Joystick
+  operations={['move', 'rotate', 'scale', 'extrude', 'fillet']}
+  operation={op}
+  onOperationChange={setOp}
+  onChange={(d) => console.log(d.operation, d.x, d.y)}
+  onAxisTap={(axis, dir) => console.log('tap', axis, dir)}
+/>`}
+  hint={<>Switch operations with the chevrons. Tap an axis label for a single step.</>}
+>
+  <OperationsDemo />
+</Demo>
+
+Strip it down instead — one axis, no switcher, no Z:
+
+<Demo
+  code={`<Joystick
+  axes={['x']}
+  zToggle={false}
+  collapsible={false}
+  size={120}
+  onChange={(d) => setX((v) => v + (d.x ?? 0))}
+/>`}
+>
+  <MinimalDemo />
+</Demo>
+
+## Props
+
+| Prop | Type | Default | |
+| --- | --- | --- | --- |
+| `operations` | `JoystickOperation[]` | `['move']` | Offered modes. One = no switcher rendered. |
+| `operation` / `onOperationChange` | — | — | Controlled mode. |
+| `axes` | `Axis[]` | `['x','y']` | Which axes the stick drives. |
+| `zToggle` / `zMode` / `onZModeChange` | `boolean` | `true` | Z as a toggle rather than a third axis. |
+| `size` | `number` | `140` | Diameter in px. |
+| `accelExponent` | `number` | `2.2` | Curve shape past the ring. |
+| `maxSpeedMultiplier` | `number` | `6` | Ceiling on the acceleration. |
+| `deadzone` | `number` | `0.06` | 0–1, ignored deflection near centre. |
+| `rotateSnapDeg` | `number` | `15` | Rotation snap. `0` = free. |
+| `keyStep` / `keyStepMultiplier` | `number` | `1` / `10` | Arrow-key step, and with `Shift`. |
+| `tapMaxMs` | `number` | `250` | Longest motionless press still a tap. |
+| `disabled` | `boolean` | `false` | |
+| `collapsible` / `defaultCollapsed` | `boolean` | `true` / `false` | |
+| `label` | `string` | — | Accessible label. |
+| `className` / `style` / `id` | — | — | |
+
+Events are covered in [Events](./events.mdx).
+
+## Touch and keyboard
+
+Pointer capture, so a drag survives your finger leaving the stick. `touch-action: none`, so dragging never scrolls the page. `pointercancel` is handled, so a system gesture releases the stick cleanly rather than leaving it stuck.
+
+Focus it and the arrow keys step by `keyStep`, `Shift` multiplies by `keyStepMultiplier`. A motionless press under `tapMaxMs` counts as a tap rather than a drag.

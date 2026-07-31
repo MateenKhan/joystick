@@ -1,0 +1,174 @@
+/* The library's own stylesheet, imported exactly as a consumer would. */
+@import '@jugaaadi/joystick/styles.css';
+
+:root {
+  --ifm-color-primary: #0e7490;
+  --ifm-color-primary-dark: #0c657d;
+  --ifm-color-primary-darker: #0b5f76;
+  --ifm-color-primary-darkest: #094e61;
+  --ifm-color-primary-light: #10839f;
+  --ifm-color-primary-lighter: #1189a6;
+  --ifm-color-primary-lightest: #139abb;
+  --ifm-code-font-size: 95%;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #22d3ee;
+  --ifm-color-primary-dark: #0dc5e2;
+  --ifm-color-primary-darker: #0cb9d5;
+  --ifm-color-primary-darkest: #0a98af;
+  --ifm-color-primary-light: #3bd9f1;
+  --ifm-color-primary-lighter: #48dbf2;
+  --ifm-color-primary-lightest: #6de3f5;
+}
+
+/* ------------------------------------------------------- demo container */
+
+.demo-card {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.demo-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+  background: var(--ifm-color-emphasis-100);
+}
+
+.demo-tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.demo-tab {
+  border: none;
+  background: transparent;
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.demo-tab:hover {
+  background: var(--ifm-color-emphasis-200);
+}
+
+.demo-tab[aria-selected='true'] {
+  background: var(--ifm-color-primary);
+  color: #fff;
+}
+
+/* The joystick's own theme is dark; a light card would misrepresent it. */
+.demo-stage {
+  padding: 1.75rem 1.25rem;
+  background: #0b1120;
+  color: #e2e8f0;
+}
+
+.demo-split {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.demo-readout {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.8rem;
+  line-height: 1.9;
+  color: #22d3ee;
+}
+
+.demo-reset {
+  margin-top: 0.5rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #e2e8f0;
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  min-height: 30px;
+}
+
+.demo-hint {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.7;
+  margin-top: 1rem;
+}
+
+.demo-hint code {
+  background: #1e293b;
+  border: none;
+  color: #22d3ee;
+}
+
+.demo-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  max-width: 420px;
+}
+
+.demo-sliders label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.demo-sliders b {
+  color: #22d3ee;
+}
+
+/* ---- headless example shell ---- */
+
+.headless-pad {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 1px solid #334155;
+  background: radial-gradient(circle at 50% 45%, #16233c 0%, #0b1120 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  outline-offset: 3px;
+}
+
+.headless-pad:active {
+  cursor: grabbing;
+}
+
+.headless-thumb {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #22d3ee, #3b82f6);
+  box-shadow: 0 2px 10px rgb(34 211 238 / 0.4);
+}
+
+/* ------------------------------------------------------------- landing */
+
+.hero-banner {
+  padding: 4rem 1rem 3rem;
+  text-align: center;
+  background: linear-gradient(180deg, #0b1120 0%, #111c33 100%);
+  color: #e2e8f0;
+}
+
+.hero-demo {
+  max-width: 460px;
+  margin: 2rem auto 0;
+  text-align: left;
+}

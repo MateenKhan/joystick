@@ -1,0 +1,73 @@
+---
+id: maths
+title: Maths
+sidebar_position: 3
+---
+
+import Demo from '@site/src/components/Demo';
+import { CurveDemo } from '@site/src/components/Demo/examples';
+
+Everything the joystick computes is **exported and unit-tested**. You can import the functions, check the numbers, and drive a dial or a trackpad with the same curve.
+
+```ts
+import { speedFor, deflection, computeDelta } from '@jugaaadi/joystick';
+```
+
+## The acceleration curve
+
+This is the whole trick: precise near the centre, fast at the edge, no mode switch. The plot below is drawn live by calling the exported `speedFor()` — the same function the stick uses.
+
+<Demo
+  code={`import { speedFor } from '@jugaaadi/joystick';
+
+speedFor(0.5, { exponent: 2.2, maxMultiplier: 6, deadzone: 0.06 });`}
+>
+  <CurveDemo />
+</Demo>
+
+Raise `accelExponent` and the centre gets flatter — more travel before anything happens, so fine work is easier and the top end arrives abruptly. Lower it and the response is closer to linear.
+
+`maxSpeedMultiplier` is the ceiling: how much faster the edge is than the centre.
+
+## Exported functions
+
+All pure. No React, no DOM.
+
+| Function | |
+| --- | --- |
+| `deflection(x, y, radius)` | 0–1 deflection from a thumb offset |
+| `speedFor(t, accel)` | the curve — deflection to speed multiplier |
+| `computeDelta(input)` | a full per-frame delta from pointer state |
+| `computeStep(...)` | one keyboard/tap step |
+| `snapRadians(rad, deg)` | snap an angle to a grid |
+| `normalizeAngle(rad)` | wrap to a single turn |
+| `mapVector(...)` | map a vector onto the active axes |
+| `dominantAxisOf(total)` | which axis moved most |
+| `resolveTap(...)` | decide tap vs drag |
+| `clampToRing(x, y, r)` | keep the thumb inside |
+| `travelRadius(size)` | ring radius for a given size |
+
+Constants: `TRAVEL_RATIO`, `DEFAULT_SIZE`, `DEFAULT_DEADZONE`, `DEFAULT_ACCEL_EXPONENT`, `DEFAULT_MAX_SPEED_MULTIPLIER`, `DEFAULT_ROTATE_SNAP_DEG`, `DEFAULT_ACCEL`.
+
+## Why it's exported
+
+Two reasons, both practical.
+
+**It's testable.** The behaviour of a joystick is otherwise something you can only *feel*. A change to the curve that "seems fine" is a change nobody can review. Because the maths is pure and exported, the tests pin actual numbers — and a PR that alters the feel has to say so in a diff.
+
+**It's reusable.** The same curve can drive a slider, a scroll-wheel handler or a gamepad axis. You don't have to mount a joystick to get its response.
+
+```ts
+// a dial with the joystick's feel, no joystick
+const multiplier = speedFor(dialDeflection, {
+  exponent: 2.2,
+  maxMultiplier: 6,
+  deadzone: 0.06,
+});
+```
+
+## Deadzone
+
+`deadzone` is deflection ignored near the centre, as a 0–1 fraction. It exists because a thumb resting on a touchscreen is never perfectly still, and a stick that drifts while "stationary" is worse than one that needs a nudge to start.
+
+Default `0.06`. Raise it for shaky hands or rough environments; drop it to zero if you're driving from a mouse and want immediate response.
