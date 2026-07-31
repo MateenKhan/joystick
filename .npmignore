@@ -1,0 +1,8 @@
+src/
+demo/
+test/
+node_modules/
+vite.config.ts
+tsup.config.ts
+tsconfig.json
+*.tsbuildinfo

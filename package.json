@@ -1,0 +1,80 @@
+{
+  "name": "@jugaaadi/joystick",
+  "version": "0.0.1",
+  "description": "A dark, touch-first analogue joystick for React. Drag past the ring and it keeps accelerating — precise near the centre, fast at the edge. Zero runtime dependencies.",
+  "keywords": [
+    "react",
+    "joystick",
+    "gamepad",
+    "thumbstick",
+    "drag",
+    "nudge",
+    "jog",
+    "3d",
+    "touch",
+    "pointer-events"
+  ],
+  "license": "MIT",
+  "author": "jugaaadi",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MateenKhan/joystick.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MateenKhan/joystick/issues"
+  },
+  "homepage": "https://joystick.jugaaadi.com",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./styles.css": "./dist/joystick.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "EVENTS.md",
+    "FORMULAS.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "vite",
+    "preview": "vite preview",
+    "test": "npm run build && node test/engine.test.mjs && node test/component.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "react": ">=17",
+    "react-dom": ">=17"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^29.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
