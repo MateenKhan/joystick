@@ -1,5 +1,13 @@
 # @jugaaadi/joystick
 
+### 👉 [Live demo & docs — joystick.jugaaadi.com](https://joystick.jugaaadi.com)
+
+<!-- Absolute URL on purpose: npm renders the README outside the repo, so a
+     relative path would show a broken image on the package page. Served from
+     GitHub, so it never enters the published tarball. -->
+
+![advance joystick in action](https://raw.githubusercontent.com/MateenKhan/joystick/main/.github/assets/demo.gif)
+
 A dark, touch-first **analogue joystick** for React.
 
 Drag it and it emits a direction and a speed, every frame, until you let go. Drag **past the ring** and it keeps accelerating while the thumb stays inside — so the same control does a 2mm nudge and a 300mm shove without a modifier key or a mode switch.
