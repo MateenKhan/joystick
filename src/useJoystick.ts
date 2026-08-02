@@ -330,7 +330,31 @@ export function useJoystick(options: UseJoystickOptions = {}): UseJoystickResult
 
       const onPointerDown = (e: PointerEvent) => {
         if (optsRef.current.disabled) return;
-        if (draggingRef.current) return;
+        /*
+         * A GESTURE THAT NEVER ENDED MUST NOT BLOCK THE NEXT ONE — the second
+         * half of the "works once, then dead for ever" bug.
+         *
+         * This used to be a bare `if (draggingRef.current) return;`. It is the
+         * right guard against a second finger arriving mid-drag, and it is a
+         * trap against a gesture whose `pointerup` went missing: `draggingRef`
+         * stays true, and from that moment on EVERY press on the stick returns
+         * here, silently, for the life of the page. There is no way back — no
+         * timeout, no reset, nothing on screen to say so.
+         *
+         * A press from a DIFFERENT pointer, or from the same pointer that is
+         * supposedly already down, means the previous gesture is over whatever
+         * the refs believe. Close it out and take the new press.
+         */
+        if (draggingRef.current) {
+          if (pointerIdRef.current !== null && pointerIdRef.current !== e.pointerId) {
+            // A genuine second pointer while one is really down: ignore it, as
+            // before. One stick, one finger.
+            const stillDown =
+              elRef.current?.hasPointerCapture?.(pointerIdRef.current) ?? false;
+            if (stillDown) return;
+          }
+          endPointer(true, syntheticMeta());
+        }
         if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
 
         // Stops text selection, page scroll, and the iOS long-press callout.
@@ -460,6 +484,53 @@ export function useJoystick(options: UseJoystickOptions = {}): UseJoystickResult
       on(el, 'pointerup', onPointerUp, { passive: false });
       on(el, 'pointercancel', onPointerCancel);
       on(el, 'lostpointercapture', onLostCapture);
+
+      /*
+       * ── THE GESTURE MUST END WHEREVER THE FINGER IS LIFTED ────────────────
+       *
+       * These four listeners are on the WINDOW, and they are the fix for a bug
+       * that made the stick unusable in a real app for a week.
+       *
+       * Every listener above is on the element, which is correct ONLY while the
+       * element holds pointer capture — capture is what retargets `pointermove`
+       * and `pointerup` back to it once the cursor leaves. `setPointerCapture`
+       * is called in a `try {} catch {}` a few lines up, because capture is
+       * documented as "a nicety, the drag still works without it".
+       *
+       * It is not a nicety. Without it the release lands on whatever is under
+       * the cursor, `onPointerUp` never runs, `endPointer` never runs,
+       * `draggingRef` stays true — and `onPointerDown` then refuses every later
+       * press for the life of the page. The stick works at most once and is
+       * dead for ever after, with nothing in the console and nothing on screen.
+       *
+       * And leaving the element is the NORMAL case, not an edge case. The ring
+       * is 29% of the base — 26.7px on a 92px stick — and the whole design
+       * invites dragging past it ("drag past the ring keeps accelerating",
+       * FORMULAS.md). Anyone pushing the stick hard is outside the element long
+       * before they let go.
+       *
+       * Capture can also be lost for reasons no consumer controls: the element
+       * being re-created by a re-render, another element capturing, the browser
+       * dropping it, or `setPointerCapture` throwing into that empty `catch`.
+       * A gesture library cannot make its own liveness depend on any of them.
+       *
+       * All four are guarded by `pointerIdRef`, which is null unless a gesture
+       * of ours is open, so nothing here can touch an unrelated pointer — and
+       * `endPointer` returns immediately when `draggingRef` is false, so the
+       * element listener and the window listener firing for the same release
+       * costs one no-op call rather than two endings.
+       */
+      on(window, 'pointermove', onPointerMove, { passive: false });
+      on(window, 'pointerup', onPointerUp, { passive: false });
+      on(window, 'pointercancel', onPointerCancel);
+      /*
+       * The window losing focus mid-drag — alt-tab, a system dialog, the
+       * browser's own UI taking over. No `pointerup` is delivered to the page
+       * at all in that case, so this is the only thing that closes the gesture.
+       */
+      on(window, 'blur', () => {
+        if (draggingRef.current) endPointer(true, syntheticMeta());
+      });
       on(el, 'pointerenter', onEnter);
       on(el, 'pointerleave', onLeave);
       on(el, 'touchmove', onTouchMove, { passive: false });
@@ -485,19 +556,59 @@ export function useJoystick(options: UseJoystickOptions = {}): UseJoystickResult
     return () => window.removeEventListener('keydown', onWindowKey);
   }, [state.dragging, endPointer]);
 
-  // Unmounting mid-drag still closes the gesture out.
+  /*
+   * Unmounting mid-drag still closes the gesture out.
+   *
+   * ─────────────────────────────────────────────────────────────────────────
+   * THIS EFFECT MUST NOT UNBIND THE LISTENERS. IT USED TO, AND IT KILLED THE
+   * STICK OUTRIGHT UNDER `<StrictMode>` — which is every dev build.
+   * ─────────────────────────────────────────────────────────────────────────
+   *
+   * It ran `cleanup.fns.forEach((fn) => fn()); cleanup.fns = [];` here, and the
+   * reasoning looked sound: on unmount, drop the listeners you added.
+   *
+   * React 18's StrictMode simulates an unmount and remount to surface exactly
+   * this class of bug — it runs every effect's CLEANUP and then the effect
+   * again. But it does **not** re-run ref callbacks: `bind` attaches once, and
+   * `bind`'s own first line is `if (elRef.current === el) return;`, so even a
+   * second call with the same element is a no-op.
+   *
+   * So the order in a dev build is:
+   *
+   *   1. bind(el)          listeners attached
+   *   2. effects run
+   *   3. StrictMode cleanup -> THIS LINE REMOVED EVERY LISTENER
+   *   4. effects run again  -> nothing re-attaches them
+   *
+   * The result is a joystick that is mounted, visible, correctly styled, fully
+   * interactive-looking, and **deaf**. `pointerdown` reaches `.jy-base` and no
+   * handler exists to hear it: no `jy-root--dragging`, no thumb movement, no
+   * `onStart`, no frames, no errors, nothing in the console.
+   *
+   * It is invisible to the test suites because jsdom mounts without StrictMode,
+   * so every DOM test passes against a build that cannot be dragged by a human.
+   * It cost a consumer a full day of chasing pointer capture, stale gestures,
+   * speed constants and CSS stacking — all downstream of a gesture that could
+   * never begin.
+   *
+   * The unbinding was redundant anyway: on a REAL unmount React calls
+   * `ref(null)`, and `bind(null)` already tears down every listener through the
+   * same `cleanup.fns`. That is the correct owner of the listeners' lifetime,
+   * because it is the thing that knows which element they are on.
+   *
+   * What stays here is the gesture's own state — the loop, the arm timer, and
+   * closing out a drag that was in flight. Those are safe to run twice.
+   */
   useEffect(
     () => () => {
       stopLoop();
       clearArmTimer();
-      cleanup.fns.forEach((fn) => fn());
-      cleanup.fns = [];
       if (draggingRef.current) {
         draggingRef.current = false;
         finishGesture(true, syntheticMeta());
       }
     },
-    [cleanup, clearArmTimer, finishGesture, stopLoop],
+    [clearArmTimer, finishGesture, stopLoop],
   );
 
   // A stick that goes disabled mid-drag must not leave the gesture open.
