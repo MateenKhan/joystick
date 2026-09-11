@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react';
-import type { CSSProperties, ReactElement } from 'react';
+import type { CSSProperties, ReactElement, ReactNode } from 'react';
 import type {
   Axis,
   JoystickDelta,
@@ -71,6 +71,28 @@ export type JoystickProps = {
   /** Snap rotation to this many degrees. 0 = free. Default 15. */
   rotateSnapDeg?: number;
 
+  /**
+   * FIELDS MODE - the numbers take the wheel's place, they do not sit above it.
+   *
+   * Rendered INSTEAD of the pad while `fieldsOpen`, one element per row. The
+   * package owns the surface, the stacking, the operation options and the
+   * switch; the consumer owns the inputs, because a number control is the
+   * consumer's business and this component has no opinion about which one.
+   *
+   * Added in 0.1.0 for the interior configurator, whose owner asked for it in
+   * these words: "i wanted the scrollable inputs of joystick inside the
+   * joystick by replacing joystick ... not above the joystick div", and then,
+   * when a first attempt kept them side by side: "keep the inputs one below
+   * other instead of one aside to other".
+   *
+   * Omit it and nothing changes - no switch is drawn and the pad behaves
+   * exactly as it did in 0.0.2.
+   */
+  fields?: ReactNode;
+  /** Controlled fields mode. Omit to let the component own it. */
+  fieldsOpen?: boolean;
+  onFieldsOpenChange?: (open: boolean) => void;
+
   disabled?: boolean;
   collapsible?: boolean; // default true
   /** Start collapsed. Default false. */
@@ -113,6 +135,9 @@ export function Joystick(props: JoystickProps): ReactElement {
     maxSpeedMultiplier = DEFAULT_MAX_SPEED_MULTIPLIER,
     deadzone = DEFAULT_DEADZONE,
     rotateSnapDeg = DEFAULT_ROTATE_SNAP_DEG,
+    fields,
+    fieldsOpen: fieldsOpenProp,
+    onFieldsOpenChange,
     disabled = false,
     collapsible = true,
     defaultCollapsed = false,
@@ -132,6 +157,7 @@ export function Joystick(props: JoystickProps): ReactElement {
 
   const [internalOp, setInternalOp] = useState<JoystickOperation>(() => operations[0] ?? 'move');
   const [internalZ, setInternalZ] = useState(false);
+  const [internalFields, setInternalFields] = useState(false);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   const operation = operationProp ?? (operations.includes(internalOp) ? internalOp : operations[0] ?? 'move');
@@ -158,6 +184,25 @@ export function Joystick(props: JoystickProps): ReactElement {
     onHover,
     onAxisTap,
   });
+
+  /*
+   * PICK AN OPERATION DIRECTLY - what the fields-mode options do, against the
+   * switcher's "next one along".
+   *
+   * It shares `cycleOperation`'s two rules rather than restating them: refuse
+   * while disabled, and write internal state ONLY when the consumer has not
+   * taken control of `operation`. A second copy of that pair is how a
+   * controlled component starts disagreeing with its owner about who holds the
+   * value.
+   */
+  const setOperation = useCallback(
+    (next: JoystickOperation) => {
+      if (disabled || next === operation || !operations.includes(next)) return;
+      if (operationProp === undefined) setInternalOp(next);
+      onOperationChange?.(next);
+    },
+    [disabled, onOperationChange, operation, operationProp, operations]
+  );
 
   const cycleOperation = useCallback(() => {
     if (disabled || operations.length < 2) return;
@@ -210,6 +255,50 @@ export function Joystick(props: JoystickProps): ReactElement {
   const showSwitcher = operations.length > 1;
   const showSidebar = showSwitcher || zToggle || !!label;
 
+  /*
+   * FIELDS MODE. Controlled when the consumer passes `fieldsOpen`, otherwise
+   * owned here - the same pattern `operation` and `zMode` already follow, so a
+   * consumer can adopt it at either level without learning a third convention.
+   *
+   * `hasFields` gates the whole feature on the consumer having supplied
+   * something to show. Drawing a switch that reveals an empty box would be a
+   * dead control, and a dead control is worse than an absent one.
+   */
+  const hasFields = fields !== undefined && fields !== null;
+  const fieldsOpen = hasFields && (fieldsOpenProp ?? internalFields);
+  const toggleFields = useCallback(() => {
+    const next = !fieldsOpen;
+    if (fieldsOpenProp === undefined) setInternalFields(next);
+    onFieldsOpenChange?.(next);
+  }, [fieldsOpen, fieldsOpenProp, onFieldsOpenChange]);
+
+  /*
+   * THE SWITCH, DRAWN THE WAY `.jy-ztoggle` IS DRAWN - a track with a knob.
+   *
+   * The consumer's first attempt at this used an icon button and he rejected
+   * it: "the toggle switch is not a switch it looks like a dimension switch
+   * make it toggle switch". The Z toggle in this very component was already
+   * the right shape, so this reuses its markup rather than inventing a second
+   * switch that would drift from it.
+   */
+  const fieldsSwitch = hasFields ? (
+    <button
+      type="button"
+      className={`jy-fieldswitch${fieldsOpen ? ' jy-fieldswitch--on' : ''}`}
+      onClick={toggleFields}
+      disabled={disabled}
+      role="switch"
+      aria-checked={fieldsOpen}
+      data-testid="jy-fields-switch"
+      title={fieldsOpen ? 'Show the pad' : 'Show the numbers'}
+    >
+      <span className="jy-fieldswitch-track">
+        <span className="jy-fieldswitch-knob" />
+      </span>
+      <span className="jy-fieldswitch-name">123</span>
+    </button>
+  ) : null;
+
   return (
     <div className={rootClass} style={rootStyle} id={id} data-operation={operation}>
       {collapsible && (
@@ -225,7 +314,74 @@ export function Joystick(props: JoystickProps): ReactElement {
         </button>
       )}
 
-      <div className="jy-panel" hidden={collapsed}>
+      <div
+        className={`jy-panel${fieldsOpen ? ' jy-panel--fields' : ''}`}
+        hidden={collapsed}
+      >
+        {/*
+          =====================================================================
+          FIELDS MODE - the numbers REPLACE the wheel, 0.1.0
+          =====================================================================
+
+          Not beside it and not above it. Two things taking one position by
+          turns cost the larger of them; two things stacked cost the sum, and
+          this panel floats over a 3D scene in a corner of a phone.
+
+          WHAT IS HERE AND WHY EACH PIECE:
+
+            .jy-title    the same label the pad shows under itself. The pad is
+                         not rendered in this mode, so without this the numbers
+                         name nothing - and an unlabelled bank of inputs over a
+                         drawing is a worse control than no inputs.
+
+            .jy-verbs    every operation the consumer OFFERS, all visible, the
+                         live one filled rather than tinted. It replaces the
+                         cycling `.jy-mode` button for this mode only, on the
+                         consumer's report: "dont forget to show the options
+                         like move, scale, rotate". A cycling button makes a
+                         person press it to discover what exists.
+
+            .jy-fields   the consumer's own inputs, stacked one per row by the
+                         stylesheet rather than by anything here.
+
+            .jy-fieldswitch  below the rows, which is where he asked for it:
+                         "make it below z axis as a normal look".
+
+          THE OPERATION OPTIONS ARE NOT A FIXED THREE. They come from
+          `operations`, the same list the switcher walks, so a consumer that
+          offers only scale and move gets two - showing a verb the selection
+          cannot take is the dead control this package already avoids by not
+          rendering the switcher at all when there is one operation.
+        */}
+        {fieldsOpen ? (
+          <>
+            {label && <div className="jy-title jy-title--fields">{label}</div>}
+            {showSwitcher && (
+              <div className="jy-verbs" role="radiogroup" aria-label="Operation">
+                {operations.map((op) => (
+                  <button
+                    key={op}
+                    type="button"
+                    role="radio"
+                    aria-checked={op === operation}
+                    className={`jy-verb${op === operation ? ' jy-verb--on' : ''}`}
+                    data-testid={`jy-verb-${op}`}
+                    disabled={disabled}
+                    onClick={() => setOperation(op)}
+                  >
+                    <OperationIcon operation={op} size={14} />
+                    <span className="jy-verb-name">{OPERATION_LABELS[op]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="jy-fields" data-testid="jy-fields">
+              {fields}
+            </div>
+            {fieldsSwitch}
+          </>
+        ) : (
+        <>
         <div
           ref={bind}
           className="jy-base"
@@ -303,6 +459,7 @@ export function Joystick(props: JoystickProps): ReactElement {
               <button
                 type="button"
                 className="jy-mode"
+                data-testid="jy-mode"
                 onClick={cycleOperation}
                 disabled={disabled}
                 title={`Switch operation (current: ${OPERATION_LABELS[operation]})`}
@@ -320,6 +477,7 @@ export function Joystick(props: JoystickProps): ReactElement {
             {zToggle && (
               <button
                 type="button"
+                data-testid="jy-ztoggle"
                 className={`jy-ztoggle${zModeActive ? ' jy-ztoggle--on' : ''}`}
                 onClick={toggleZ}
                 disabled={disabled}
@@ -332,7 +490,12 @@ export function Joystick(props: JoystickProps): ReactElement {
                 <span className="jy-ztoggle-name">Z</span>
               </button>
             )}
+            {/* The way INTO fields mode. It has to live in the pad's own column
+                because there are no rows to sit under while the pad is up. */}
+            {fieldsSwitch}
           </div>
+        )}
+        </>
         )}
       </div>
     </div>

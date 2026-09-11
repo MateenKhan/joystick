@@ -1,6 +1,6 @@
 {
   "name": "@jugaaadi/joystick",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "A dark, touch-first analogue joystick for React. Drag past the ring and it keeps accelerating \u2014 precise near the centre, fast at the edge. Zero runtime dependencies.",
   "keywords": [
     "react",
@@ -54,7 +54,7 @@
     "build": "tsup",
     "dev": "vite",
     "preview": "vite preview",
-    "test": "npm run build && node test/engine.test.mjs && node test/component.test.mjs && node test/repro-interior.test.mjs && node test/repro-consumer-relay.test.mjs",
+    "test": "npm run build && node test/engine.test.mjs && node test/component.test.mjs && node test/repro-interior.test.mjs && node test/repro-consumer-relay.test.mjs && node test/fields-mode.test.mjs",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },

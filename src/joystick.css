@@ -570,3 +570,189 @@ button.jy-mode:hover:not(:disabled) {
   --jy-thumb-dimple: #e2e8f0;
   --jy-tick: #94a3b8;
 }
+
+/* ==================================================================== */
+/* FIELDS MODE — the numbers take the wheel's place (0.1.0)              */
+/* ==================================================================== */
+/*
+ * Added for the interior configurator, whose owner asked for it twice and in
+ * these words: *"i wanted the scrollable inputs of joystick inside the joystick
+ * by replacing joystick ... not above the joystick div"*, then — after a first
+ * attempt kept them packed side by side — *"keep the inputs one below other
+ * instead of one aside to other"*, with the reason: *"i asked you to do this
+ * because they were not easy to use now is also the same case"*.
+ *
+ * The panel is the SAME `.jy-panel` the pad uses, so this mode inherits the
+ * surface, the radius, the blur and the shadow rather than replicating them.
+ * That was the whole point of putting it here: a consumer copying this look
+ * into its own stylesheet is a copy that drifts.
+ */
+.jy-panel--fields {
+  /* A column, where pad mode is a row. Everything below is one per line. */
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  /* The pad's own bottom band is for an absolutely positioned title. There is
+     no such title here — `.jy-title--fields` is in flow — so the band goes and
+     the space is spent on the rows instead. */
+  padding-bottom: var(--jy-panel-padding-bottom, 10px);
+}
+
+.jy-title--fields {
+  /* In flow, unlike the pad's caption, which is positioned into the dead band
+     under the wheel. Nothing is under anything here. */
+  position: static;
+  font-size: var(--jy-label-size, 11px);
+  font-weight: var(--jy-label-weight, 700);
+  color: var(--jy-text, #cbd5e1);
+  /* A long name folds rather than widening the panel or clipping to an
+     ellipsis — half a name with a "…" looks like an answer. */
+  overflow-wrap: anywhere;
+}
+
+/*
+ * ONE FIELD PER ROW. NO THRESHOLD, NO CONTAINER QUERY, NO EXCEPTION.
+ *
+ * The consumer had a stacked rule and a container query that flipped it to
+ * side-by-side above 232px, with its own width hardcoded ABOVE that — so the
+ * query always matched and the stacked rule was dead code that read as the
+ * intended layout. That is the defect he reported twice. It is not reproduced
+ * here: there is nothing to flip.
+ */
+.jy-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.jy-fields > * {
+  /* Full width, and able to shrink to its box rather than overflowing it. */
+  width: 100%;
+  min-width: 0;
+}
+
+/*
+ * THE OPERATION OPTIONS — all of them visible, the live one FILLED.
+ *
+ * *"dont forget to show the options like move, scale, rotate"*. The switcher in
+ * pad mode cycles, which makes a person press it and watch what happens to
+ * learn what exists; here they are all on screen and you pick one.
+ *
+ * The current one is a difference in FILL, not in shade. A tint on a dark panel
+ * is what made the consumer's first switch unreadable, and it fails for the
+ * same people a colour-only signal always fails.
+ */
+.jy-verbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.jy-verb {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  appearance: none;
+  cursor: pointer;
+  border-radius: 999px;
+  min-height: 28px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: var(--jy-mode-size, 9px);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--jy-control-bg, rgba(8, 10, 16, 0.85));
+  border: 1px solid var(--jy-control-border, rgba(255, 255, 255, 0.1));
+  color: var(--jy-text-dim, #64748b);
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.jy-verb:hover:not(:disabled) {
+  background: var(--jy-control-hover-bg, rgba(30, 41, 59, 0.9));
+}
+
+.jy-verb--on {
+  background: var(--jy-accent, #6ea8fe);
+  border-color: var(--jy-accent, #6ea8fe);
+  /* Near-black on the accent. The accent is a light blue and white on it does
+     not clear contrast — the consumer's `check:panel-ink` measures this. */
+  color: var(--jy-accent-ink, #0b1020);
+}
+
+/*
+ * THE FIELDS SWITCH — a track and a knob, exactly as `.jy-ztoggle` is drawn.
+ *
+ * *"the toggle switch is not a switch it looks like a dimension switch make it
+ * toggle switch"*. The Z toggle in this component was already the right shape,
+ * so this reuses its geometry rather than inventing a second switch that would
+ * drift from it. Placed last in the column, which is *"below z axis"*.
+ */
+.jy-fieldswitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-end;
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  /* The row carries the 44px touch target; the track is the visible mark. */
+  min-height: 36px;
+  cursor: pointer;
+  color: var(--jy-text-dim, #64748b);
+  font: inherit;
+  font-size: var(--jy-mode-size, 9px);
+  font-weight: 700;
+}
+
+.jy-fieldswitch-track {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--jy-control-bg, rgba(8, 10, 16, 0.85));
+  border: 1px solid var(--jy-control-border, rgba(255, 255, 255, 0.1));
+  transition: background-color 160ms ease;
+}
+
+.jy-fieldswitch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--jy-text, #cbd5e1);
+  /* Transform only — a `left` transition would animate layout. */
+  transition: transform 160ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.jy-fieldswitch--on {
+  color: var(--jy-text, #cbd5e1);
+}
+
+.jy-fieldswitch--on .jy-fieldswitch-track {
+  background: var(--jy-accent, #6ea8fe);
+  border-color: var(--jy-accent, #6ea8fe);
+}
+
+.jy-fieldswitch--on .jy-fieldswitch-knob {
+  background: #fff;
+  transform: translateX(14px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The knob still MOVES — its position IS the state, so that is information
+     rather than decoration. Only the easing goes. */
+  .jy-fieldswitch-knob,
+  .jy-verb {
+    transition-duration: 0s;
+  }
+}
