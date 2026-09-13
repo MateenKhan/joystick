@@ -79,7 +79,7 @@ export type JoystickProps = {
    * switch; the consumer owns the inputs, because a number control is the
    * consumer's business and this component has no opinion about which one.
    *
-   * Added in 0.1.0 for the interior configurator, whose owner asked for it in
+   * Added in 0.0.3 for the interior configurator, whose owner asked for it in
    * these words: "i wanted the scrollable inputs of joystick inside the
    * joystick by replacing joystick ... not above the joystick div", and then,
    * when a first attempt kept them side by side: "keep the inputs one below
@@ -320,7 +320,7 @@ export function Joystick(props: JoystickProps): ReactElement {
       >
         {/*
           =====================================================================
-          FIELDS MODE - the numbers REPLACE the wheel, 0.1.0
+          FIELDS MODE - the numbers REPLACE the wheel, 0.0.3
           =====================================================================
 
           Not beside it and not above it. Two things taking one position by

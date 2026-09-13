@@ -1,5 +1,5 @@
 /**
- * FIELDS MODE — the numbers take the wheel's place (0.1.0).
+ * FIELDS MODE — the numbers take the wheel's place (0.0.3).
  *
  *   node test/fields-mode.test.mjs      (run by `npm test`)
  *
