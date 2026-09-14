@@ -1,6 +1,6 @@
 {
   "name": "@jugaaadi/joystick",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A dark, touch-first analogue joystick for React. Drag past the ring and it keeps accelerating — precise near the centre, fast at the edge. Zero runtime dependencies.",
   "keywords": [
     "react",

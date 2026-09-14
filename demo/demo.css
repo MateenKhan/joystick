@@ -160,3 +160,29 @@ h1 {
   color: #475569;
   line-height: 1.6;
 }
+
+/* Fields-mode rows for the demo, added 2026-09-15. The package styles the
+   slot and the switch; a consumer styles its own rows, which is what these
+   are. The configurator hands in scrolling number controls instead. */
+.jyDemoField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.jyDemoField > span {
+  flex: 0 0 18px;
+  font: 600 12px/1 system-ui, sans-serif;
+  color: #9aa4b2;
+}
+.jyDemoField > input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #2c333d;
+  border-radius: 6px;
+  background: #11151a;
+  color: #e6e9ee;
+  font: 600 14px/1 system-ui, sans-serif;
+}

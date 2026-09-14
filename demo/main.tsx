@@ -7,6 +7,8 @@
 
 import { StrictMode, useCallback, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { DimensionInput, Unit } from '@jugaaadi/advance-scroll-input';
+import '@jugaaadi/advance-scroll-input/styles.css';
 import { Joystick, useJoystick } from '../src/index';
 import type { Axis, JoystickDelta, JoystickGestureSummary } from '../src/index';
 import '../src/joystick.css';
@@ -24,6 +26,22 @@ function App() {
   const [deadzone, setDeadzone] = useState(0.06);
   const [snap, setSnap] = useState(15);
   const [showAll, setShowAll] = useState(false);
+  /*
+   * FIELDS MODE, added to the demo 2026-09-15. The demo rendered the wheel and
+   * nothing else, so the switch had nothing to reveal and the feature read as
+   * absent to anyone opening this page.
+   *
+   * The package owns the SLOT and the SWITCH, never the rows. A consumer hands
+   * in one element per row as `fields`; the joystick puts them where the wheel
+   * was, at the same size, and the switch throws between the two.
+   *
+   * The rows here are the REAL `@jugaaadi/advance-scroll-input` controls the
+   * configurator hands in, not plain inputs, and that is the point: a scroll
+   * input works by DRAGGING and so does the joystick's wheel. Two drag handlers
+   * in one box is the only place this pairing can go wrong, and a demo built
+   * from plain inputs would never show it.
+   */
+  const [fieldsOpen, setFieldsOpen] = useState(false);
   const frames = useRef(0);
 
   const log = useCallback((label: string, detail: string) => {
@@ -213,6 +231,26 @@ function App() {
       <div className="dock">
         <Joystick
           label="Shelf"
+          fieldsOpen={fieldsOpen}
+          onFieldsOpenChange={setFieldsOpen}
+          fields={(['x', 'y', 'z'] as const).map((axis) => (
+            <label key={axis} className="jyDemoField">
+              <span>{axis.toUpperCase()}</span>
+              <DimensionInput
+                data-testid={`demo-field-${axis}`}
+                aria-label={`${axis.toUpperCase()} in millimetres`}
+                valueMm={pos[axis]}
+                unit={Unit.MM}
+                step={1}
+                allowNegative
+                displayDecimals={0}
+                onChangeMm={(next: number) => {
+                  setPos((p) => ({ ...p, [axis]: next }));
+                  log('field', `${axis} = ${Math.round(next)}`);
+                }}
+              />
+            </label>
+          ))}
           operations={showAll ? ['move', 'rotate', 'scale', 'extrude', 'fillet'] : undefined}
           accelExponent={accelExponent}
           maxSpeedMultiplier={maxSpeed}
