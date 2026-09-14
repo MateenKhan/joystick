@@ -27,6 +27,8 @@ import {
 } from './engine';
 import { ChevronLeftIcon, ChevronRightIcon, OperationIcon } from './icons';
 import { useJoystick } from './useJoystick';
+import { FieldRows } from './FieldRows';
+import type { JoystickFieldRow } from './FieldRows';
 
 /**
  * Module-level so the default keeps a stable identity across renders — a fresh
@@ -131,6 +133,26 @@ export type JoystickProps = {
    * exactly as it did in 0.0.2.
    */
   fields?: ReactNode;
+  /**
+   * FIELDS MODE, DECLARATIVE FORM - the same slot as `fields`, described
+   * instead of hand-built.
+   *
+   * One entry per row; this package renders each with
+   * `@jugaaadi/advance-scroll-input`'s `DimensionInput` — a PEER dependency
+   * (see the package's README), so install it, and its stylesheet, to use
+   * this. Added in 0.0.4 so a consumer who already has a value, a unit, a
+   * step and bounds for each row does not have to build the rows a second
+   * time just to put them in the joystick — its owner: "i dont want to update
+   * interior project to change scrollable input, so as per requirements in
+   * interior project change component here."
+   *
+   * `fields` WINS when both are given: it is the more specific, hand-built
+   * override, and `fieldRows` is the convenience path. Pass one or the other.
+   *
+   * A missing peer never throws mid-render — see `FieldRows.tsx` — it prints
+   * the install command in the rows' place instead.
+   */
+  fieldRows?: JoystickFieldRow[];
   /** Controlled fields mode. Omit to let the component own it. */
   fieldsOpen?: boolean;
   onFieldsOpenChange?: (open: boolean) => void;
@@ -190,6 +212,7 @@ export function Joystick(props: JoystickProps): ReactElement {
     deadzone = DEFAULT_DEADZONE,
     rotateSnapDeg = DEFAULT_ROTATE_SNAP_DEG,
     fields,
+    fieldRows,
     fieldsOpen: fieldsOpenProp,
     onFieldsOpenChange,
     disabled = false,
@@ -316,10 +339,17 @@ export function Joystick(props: JoystickProps): ReactElement {
    * consumer can adopt it at either level without learning a third convention.
    *
    * `hasFields` gates the whole feature on the consumer having supplied
-   * something to show. Drawing a switch that reveals an empty box would be a
-   * dead control, and a dead control is worse than an absent one.
+   * something to show, from EITHER door - a hand-built `fields` ReactNode or
+   * a declarative `fieldRows` list. Drawing a switch that reveals an empty box
+   * would be a dead control, and a dead control is worse than an absent one.
+   *
+   * `fields` WINS when both are given - see the prop's own doc comment. It is
+   * the more specific, hand-built override; `fieldRows` is the convenience
+   * path this package builds FOR the consumer.
    */
-  const hasFields = fields !== undefined && fields !== null;
+  const hasExplicitFields = fields !== undefined && fields !== null;
+  const hasFieldRows = Array.isArray(fieldRows) && fieldRows.length > 0;
+  const hasFields = hasExplicitFields || hasFieldRows;
   const fieldsOpen = hasFields && (fieldsOpenProp ?? internalFields);
   const toggleFields = useCallback(() => {
     const next = !fieldsOpen;
@@ -436,7 +466,7 @@ export function Joystick(props: JoystickProps): ReactElement {
               </div>
             )}
             <div className="jy-fields" data-testid="jy-fields">
-              {fields}
+              {hasExplicitFields ? fields : hasFieldRows ? <FieldRows rows={fieldRows as JoystickFieldRow[]} disabled={disabled} /> : null}
             </div>
             {fieldsSwitch}
           </>

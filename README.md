@@ -30,6 +30,8 @@ Or straight from disk:
 npm install file:../joystick/jugaaadi-joystick-0.0.1.tgz
 ```
 
+Peer dependencies are `react` and `react-dom` (>=17), always required. `@jugaaadi/advance-scroll-input` is an **optional** peer, needed only for `fieldRows` — see [Fields mode](#fields-mode).
+
 ## Quick start
 
 ```tsx
@@ -135,6 +137,47 @@ Available: `move`, `rotate`, `scale`, `extrude`, `fillet`. Each ships an icon. T
 
 `zToggle` (default `true`) adds a **Z** button. While it is on, the vertical drag drives `z` and the horizontal drag is ignored — one stick, two planes, no second control. It is independent of `axes`: turning it off just hides the button.
 
+## Fields mode
+
+A switch that replaces the wheel with a bank of number inputs, one per row — for when typing an exact value matters as much as dragging one. Omit both `fields` and `fieldRows` and nothing changes: no switch is drawn, the pad behaves exactly as it always has.
+
+There are two doors in, and they render into the same slot:
+
+- **`fields`** — hand it a `ReactNode`, one element per row. You build the rows; this package owns the slot, the stacking, the operation options and the switch.
+- **`fieldRows`** — hand it a list of row *descriptions* instead, and this package builds the rows for you with [`@jugaaadi/advance-scroll-input`](https://scroll-input.jugaaadi.com)'s `DimensionInput`:
+
+  ```tsx
+  <Joystick
+    fieldRows={[
+      { id: 'x', label: 'X', valueMm: pos.x, onChangeMm: (mm) => setPos((p) => ({ ...p, x: mm })) },
+      { id: 'y', label: 'Y', valueMm: pos.y, onChangeMm: (mm) => setPos((p) => ({ ...p, y: mm })) },
+      { id: 'z', label: 'Z', valueMm: pos.z, min: 0, max: 500, onChangeMm: (mm) => setPos((p) => ({ ...p, z: mm })) },
+    ]}
+  />
+  ```
+
+  `@jugaaadi/advance-scroll-input` is a **peer dependency** — optional, and not bundled here. Install it (`npm install @jugaaadi/advance-scroll-input`, and its stylesheet: `import '@jugaaadi/advance-scroll-input/styles.css'`) to use `fieldRows`; a consumer who only wants the wheel never loads it. It is loaded with a runtime `import()`, only when `fieldRows` is actually used, so a missing install shows an install hint in the rows' place instead of throwing mid-render.
+
+  This is deliberately a *peer*, not a bundled copy: an app using `fieldRows` almost certainly already renders `DimensionInput` elsewhere on the same page (a side menu of the same numbers, say), and a peer guarantees there is exactly one copy of that input on the page rather than two that can drift apart.
+
+**`fields` wins if both are given** — it is the more specific, hand-built override; `fieldRows` is the convenience path. Pass one or the other, not both.
+
+Each `fieldRows` entry:
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `id` | `string` | — | **Required.** React key, and the suffix of `data-testid="jy-row-<id>"` / `"jy-row-<id>-input"`. |
+| `label` | `string` | — | **Required.** Visible row caption, and its `aria-label` unless `ariaLabel` overrides it. |
+| `ariaLabel` | `string` | — | Overrides the accessible name; the visible `label` is unaffected. |
+| `valueMm` | `number` | — | **Required.** Current value, in millimetres. |
+| `onChangeMm` | `(mm: number) => void` | — | **Required.** Fires when a scrub, step or typed entry commits. |
+| `unit` | `Unit` (from the peer) | `Unit.MM` | Display/parse unit. |
+| `step` | `number` | `1` | One detent / one arrow tap / one arrow key, in mm. |
+| `min` / `max` | `number` | — | Bounds, in mm. A negative `min` is ignored unless `allowNegative` — the underlying input's own rule. |
+| `allowNegative` | `boolean` | `false` | Permit values below zero. |
+| `onClamp` | `(clamped, requested, bound: 'min' \| 'max') => void` | — | Fires when a value is refused — a clamp always says so, never silently. |
+| `disabled` | `boolean` | `false` | |
+
 ## Touch
 
 The stick is touch-first, because a joystick that scrolls the pane under it is useless on a phone:
@@ -233,6 +276,10 @@ A light preset ships as a modifier: `<Joystick className="jy-root--light" />`.
 | `maxSpeedMultiplier` | `number` | `6` | Ceiling on the emitted speed. |
 | `deadzone` | `number` | `0.06` | 0–1 fraction of the ring that emits nothing. |
 | `rotateSnapDeg` | `number` | `15` | Snap rotation to this many degrees. `0` = free. |
+| `fields` | `ReactNode` | — | Fields mode, hand-built: your own rows, replacing the pad while open. See [Fields mode](#fields-mode). Wins over `fieldRows` if both are given. |
+| `fieldRows` | `JoystickFieldRow[]` | — | Fields mode, declarative: row descriptions this package renders with the peer `@jugaaadi/advance-scroll-input`. See [Fields mode](#fields-mode). |
+| `fieldsOpen` | `boolean` | — | Controlled fields-mode state. Omit to let the component own it. |
+| `onFieldsOpenChange` | `(open: boolean) => void` | — | Fires when the fields switch is pressed. |
 | `disabled` | `boolean` | `false` | Ignore all input; ends any gesture in progress. |
 | `collapsible` | `boolean` | `true` | Show the collapse chevron. |
 | `defaultCollapsed` | `boolean` | `false` | Start collapsed. |

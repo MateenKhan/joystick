@@ -633,6 +633,45 @@ button.jy-mode:hover:not(:disabled) {
 }
 
 /*
+ * DECLARATIVE ROWS (`fieldRows`, 0.0.4) — built by this package instead of the
+ * consumer, so they inherit `.jy-fields`'s own column above rather than
+ * bringing a second layout. Each row is caption-left, control-right, the same
+ * shape the consumer's own hand-built rows already used — see `demo/main.tsx`.
+ */
+.jy-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.jy-field-row-label {
+  flex: 0 0 auto;
+  max-width: 40%;
+  overflow-wrap: anywhere;
+  font-size: var(--jy-label-size, 11px);
+  font-weight: var(--jy-label-weight, 700);
+  color: var(--jy-text-dim, #64748b);
+}
+
+.jy-field-row > :last-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The peer package missing, or still loading. Plain text, not a dead box. */
+.jy-field-rows-error {
+  font-size: var(--jy-label-size, 11px);
+  line-height: 1.4;
+  color: var(--jy-text-dim, #64748b);
+}
+
+.jy-field-rows-loading {
+  min-height: 1px;
+}
+
+/*
  * THE OPERATION OPTIONS — all of them visible, the live one FILLED.
  *
  * *"dont forget to show the options like move, scale, rotate"*. The switcher in

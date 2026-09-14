@@ -10,7 +10,11 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   treeshake: true,
-  external: ['react', 'react-dom'],
+  // `@jugaaadi/advance-scroll-input` is a peer, loaded only via the runtime
+  // `import()` in `FieldRows.tsx` when a consumer passes `fieldRows` — never
+  // bundled, so a consumer who wants only the wheel never pays for it, and a
+  // consumer who does use it gets the ONE copy their own app already has.
+  external: ['react', 'react-dom', '@jugaaadi/advance-scroll-input'],
   // The stylesheet ships as-is so consumers can override the custom
   // properties without fighting a bundled copy.
   onSuccess: async () => {

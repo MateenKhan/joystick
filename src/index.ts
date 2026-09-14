@@ -11,6 +11,17 @@
 export { Joystick } from './Joystick';
 export type { JoystickProps, JoystickLabels } from './Joystick';
 
+/**
+ * `fieldRows` is the declarative alternative to `fields` — one entry per row,
+ * rendered with `@jugaaadi/advance-scroll-input`'s `DimensionInput`. That
+ * package is a PEER dependency (see `FieldRows.tsx` and the README), loaded
+ * only through a runtime `import()` inside `FieldRows.tsx` and only when a
+ * consumer actually passes `fieldRows` — so this export is type-only and adds
+ * no runtime import of the peer, the same way `JoystickFieldRow.unit`'s own
+ * type does not.
+ */
+export type { JoystickFieldRow } from './FieldRows';
+
 /** Headless engine, for building your own visual shell. */
 export { useJoystick } from './useJoystick';
 export type { UseJoystickOptions, JoystickState, UseJoystickResult } from './useJoystick';
