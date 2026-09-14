@@ -237,6 +237,7 @@ A light preset ships as a modifier: `<Joystick className="jy-root--light" />`.
 | `collapsible` | `boolean` | `true` | Show the collapse chevron. |
 | `defaultCollapsed` | `boolean` | `false` | Start collapsed. |
 | `label` | `string` | — | Sidebar caption and `aria-label`. |
+| `labels` | `JoystickLabels` | — | Overrides for every other user-facing string — operation words, axis letters, the fields switch's caption/aria-label/title, and the two accessible-name fallbacks (`joystick`, `operationGroup`). Every key optional; omit the whole prop and nothing changes. |
 | `keyStep` | `number` | `1` | Units emitted by one arrow press. |
 | `keyStepMultiplier` | `number` | `10` | Multiplier while `Shift` is held. |
 | `tapMaxMs` | `number` | `250` | Longest motionless press still treated as a tap. |

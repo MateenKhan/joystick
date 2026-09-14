@@ -9,7 +9,7 @@
  */
 
 export { Joystick } from './Joystick';
-export type { JoystickProps } from './Joystick';
+export type { JoystickProps, JoystickLabels } from './Joystick';
 
 /** Headless engine, for building your own visual shell. */
 export { useJoystick } from './useJoystick';

@@ -43,6 +43,48 @@ const OPERATION_LABELS: Record<JoystickOperation, string> = {
   fillet: 'Fillet',
 };
 
+/**
+ * ONE PROP FOR EVERY OVERRIDABLE STRING, rather than eight loose ones.
+ *
+ * Every key here is optional and every key has today's text as its fallback,
+ * so a consumer that omits `labels` entirely — every existing consumer — sees
+ * no change at all. A single object was chosen over separate `operationLabels`
+ * / `axisLabels` / `joystickLabel` / … props because the set of overridable
+ * strings has already grown once (this change) and will again; a bag with one
+ * optional key per string absorbs that growth without widening the props list
+ * every time, and it reads at a call site as "the words", one concern, rather
+ * than a scatter of same-shaped props a consumer has to hunt for individually.
+ */
+export type JoystickLabels = {
+  /**
+   * Per-operation text for the mode chip, its title, and the fields-mode verb
+   * radios. Keys are optional; an operation not named here keeps its built-in
+   * English word (Move / Rotate / Scale / Extrude / Fillet).
+   */
+  operations?: Partial<Record<JoystickOperation, string>>;
+  /**
+   * Per-axis letter drawn on the pad (the `+X` / `-X` style labels). An axis
+   * not named here keeps its own letter, uppercased, as today.
+   */
+  axes?: Partial<Record<Axis, string>>;
+  /** The stick's own `aria-label` when the `label` prop is not given. Default `'Joystick'`. */
+  joystick?: string;
+  /** The fields-mode operation radiogroup's `aria-label`. Default `'Operation'`. */
+  operationGroup?: string;
+  /** The fields-mode switch's visible caption (its knob's text). Default `'123'`. */
+  fieldsSwitchName?: string;
+  /**
+   * The fields-mode switch's `aria-label`. Omitted by default, the same as
+   * today — its accessible name then comes from `fieldsSwitchName`'s text, as
+   * it always has.
+   */
+  fieldsSwitchAriaLabel?: string;
+  /** The fields-mode switch's `title` while the fields are open (pressing it shows the pad). Default `'Show the pad'`. */
+  fieldsSwitchTitleOpen?: string;
+  /** The fields-mode switch's `title` while the fields are closed (pressing it shows the numbers). Default `'Show the numbers'`. */
+  fieldsSwitchTitleClosed?: string;
+};
+
 export type JoystickProps = {
   /**
    * Which operations are offered. DEFAULT: `['move']` only.
@@ -98,6 +140,8 @@ export type JoystickProps = {
   /** Start collapsed. Default false. */
   defaultCollapsed?: boolean;
   label?: string;
+  /** Overrides for every other user-facing string — operation names, axis letters, the fields switch. Every key optional; omit the whole prop and nothing changes. */
+  labels?: JoystickLabels;
 
   /** Units emitted by one arrow-key press. Default 1. */
   keyStep?: number;
@@ -121,6 +165,16 @@ function axisClass(axis: Axis | undefined): string {
   return axis ? `jy-axis--${axis}` : 'jy-axis--none';
 }
 
+/** `OPERATION_LABELS[op]`, overridable per key, falling back to the built-in word. */
+function operationLabel(labels: JoystickLabels | undefined, op: JoystickOperation): string {
+  return labels?.operations?.[op] ?? OPERATION_LABELS[op];
+}
+
+/** The letter drawn on the pad for an axis, overridable per key, falling back to its own uppercase letter. */
+function axisLabel(labels: JoystickLabels | undefined, axis: Axis): string {
+  return labels?.axes?.[axis] ?? axis.toUpperCase();
+}
+
 export function Joystick(props: JoystickProps): ReactElement {
   const {
     operations = DEFAULT_OPERATIONS,
@@ -142,6 +196,7 @@ export function Joystick(props: JoystickProps): ReactElement {
     collapsible = true,
     defaultCollapsed = false,
     label,
+    labels,
     keyStep,
     keyStepMultiplier,
     tapMaxMs,
@@ -289,13 +344,18 @@ export function Joystick(props: JoystickProps): ReactElement {
       disabled={disabled}
       role="switch"
       aria-checked={fieldsOpen}
+      aria-label={labels?.fieldsSwitchAriaLabel}
       data-testid="jy-fields-switch"
-      title={fieldsOpen ? 'Show the pad' : 'Show the numbers'}
+      title={
+        fieldsOpen
+          ? labels?.fieldsSwitchTitleOpen ?? 'Show the pad'
+          : labels?.fieldsSwitchTitleClosed ?? 'Show the numbers'
+      }
     >
       <span className="jy-fieldswitch-track">
         <span className="jy-fieldswitch-knob" />
       </span>
-      <span className="jy-fieldswitch-name">123</span>
+      <span className="jy-fieldswitch-name">{labels?.fieldsSwitchName ?? '123'}</span>
     </button>
   ) : null;
 
@@ -357,7 +417,7 @@ export function Joystick(props: JoystickProps): ReactElement {
           <>
             {label && <div className="jy-title jy-title--fields">{label}</div>}
             {showSwitcher && (
-              <div className="jy-verbs" role="radiogroup" aria-label="Operation">
+              <div className="jy-verbs" role="radiogroup" aria-label={labels?.operationGroup ?? 'Operation'}>
                 {operations.map((op) => (
                   <button
                     key={op}
@@ -370,7 +430,7 @@ export function Joystick(props: JoystickProps): ReactElement {
                     onClick={() => setOperation(op)}
                   >
                     <OperationIcon operation={op} size={14} />
-                    <span className="jy-verb-name">{OPERATION_LABELS[op]}</span>
+                    <span className="jy-verb-name">{operationLabel(labels, op)}</span>
                   </button>
                 ))}
               </div>
@@ -386,7 +446,7 @@ export function Joystick(props: JoystickProps): ReactElement {
           ref={bind}
           className="jy-base"
           role="application"
-          aria-label={label ?? 'Joystick'}
+          aria-label={label ?? labels?.joystick ?? 'Joystick'}
           aria-disabled={disabled || undefined}
           tabIndex={disabled ? -1 : 0}
         >
@@ -413,20 +473,20 @@ export function Joystick(props: JoystickProps): ReactElement {
             {verticalAxis && (
               <>
                 <span className={`jy-label jy-label--top ${axisClass(verticalAxis)}`}>
-                  +{verticalAxis.toUpperCase()}
+                  +{axisLabel(labels, verticalAxis)}
                 </span>
                 <span className={`jy-label jy-label--bottom ${axisClass(verticalAxis)}`}>
-                  -{verticalAxis.toUpperCase()}
+                  -{axisLabel(labels, verticalAxis)}
                 </span>
               </>
             )}
             {horizontalAxis && (
               <>
                 <span className={`jy-label jy-label--right ${axisClass(horizontalAxis)}`}>
-                  +{horizontalAxis.toUpperCase()}
+                  +{axisLabel(labels, horizontalAxis)}
                 </span>
                 <span className={`jy-label jy-label--left ${axisClass(horizontalAxis)}`}>
-                  -{horizontalAxis.toUpperCase()}
+                  -{axisLabel(labels, horizontalAxis)}
                 </span>
               </>
             )}
@@ -462,15 +522,15 @@ export function Joystick(props: JoystickProps): ReactElement {
                 data-testid="jy-mode"
                 onClick={cycleOperation}
                 disabled={disabled}
-                title={`Switch operation (current: ${OPERATION_LABELS[operation]})`}
+                title={`Switch operation (current: ${operationLabel(labels, operation)})`}
               >
                 <OperationIcon operation={operation} size={18} />
-                <span className="jy-mode-name">{OPERATION_LABELS[operation]}</span>
+                <span className="jy-mode-name">{operationLabel(labels, operation)}</span>
               </button>
             ) : (
               <div className="jy-mode jy-mode--static">
                 <OperationIcon operation={operation} size={18} />
-                <span className="jy-mode-name">{OPERATION_LABELS[operation]}</span>
+                <span className="jy-mode-name">{operationLabel(labels, operation)}</span>
               </div>
             )}
 
